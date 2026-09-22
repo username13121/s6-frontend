@@ -9,6 +9,7 @@ src/libs6f/s6f_confdir_open.o src/libs6f/s6f_confdir_open.lo: src/libs6f/s6f_con
 src/libs6f/s6f_equote.o src/libs6f/s6f_equote.lo: src/libs6f/s6f_equote.c src/include-local/s6f.h
 src/libs6f/s6f_report_state_change.o src/libs6f/s6f_report_state_change.lo: src/libs6f/s6f_report_state_change.c src/include-local/s6f.h
 src/libs6f/s6f_user_get_confdirs.o src/libs6f/s6f_user_get_confdirs.lo: src/libs6f/s6f_user_get_confdirs.c src/include-local/s6f.h
+src/libs6f/s6f_user_xdg_subst.o src/libs6f/s6f_user_xdg_subst.lo: src/libs6f/s6f_user_xdg_subst.c src/include-local/s6f.h
 src/s6-frontend/live.o src/s6-frontend/live.lo: src/s6-frontend/live.c src/s6-frontend/s6-frontend-internal.h
 src/s6-frontend/live_install.o src/s6-frontend/live_install.lo: src/s6-frontend/live_install.c src/s6-frontend/s6-frontend-internal.h
 src/s6-frontend/live_reload.o src/s6-frontend/live_reload.lo: src/s6-frontend/live_reload.c src/s6-frontend/s6-frontend-internal.h src/include/s6-frontend/config.h
@@ -27,7 +28,7 @@ src/s6-frontend/repository_init.o src/s6-frontend/repository_init.lo: src/s6-fro
 src/s6-frontend/repository_list.o src/s6-frontend/repository_list.lo: src/s6-frontend/repository_list.c src/s6-frontend/s6-frontend-internal.h
 src/s6-frontend/repository_sync.o src/s6-frontend/repository_sync.lo: src/s6-frontend/repository_sync.c src/s6-frontend/s6-frontend-internal.h
 src/s6-frontend/s6-frontend.o src/s6-frontend/s6-frontend.lo: src/s6-frontend/s6-frontend.c src/s6-frontend/s6-frontend-internal.h src/include-local/s6f.h
-src/s6-frontend/s6.o src/s6-frontend/s6.lo: src/s6-frontend/s6.c src/include/s6-frontend/config.h
+src/s6-frontend/s6.o src/s6-frontend/s6.lo: src/s6-frontend/s6.c src/include/s6-frontend/config.h src/include-local/s6f.h
 src/s6-frontend/set.o src/s6-frontend/set.lo: src/s6-frontend/set.c src/s6-frontend/s6-frontend-internal.h
 src/s6-frontend/set_apply.o src/s6-frontend/set_apply.lo: src/s6-frontend/set_apply.c src/s6-frontend/s6-frontend-internal.h
 src/s6-frontend/set_change.o src/s6-frontend/set_change.lo: src/s6-frontend/set_change.c src/s6-frontend/s6-frontend-internal.h
@@ -49,12 +50,12 @@ s6-frontend-helper-echore: src/helpers/s6-frontend-helper-echore.o -lskarnet
 s6-frontend-helper-kill: EXTRA_LIBS :=
 s6-frontend-helper-kill: src/helpers/s6-frontend-helper-kill.o -lskarnet
 ifeq ($(strip $(STATIC_LIBS_ARE_PIC)),)
-libs6f.a.xyzzy: src/libs6f/s6f_confdir_open.o src/libs6f/s6f_equote.o src/libs6f/s6f_report_state_change.o src/libs6f/s6f_user_get_confdirs.o
+libs6f.a.xyzzy: src/libs6f/s6f_confdir_open.o src/libs6f/s6f_equote.o src/libs6f/s6f_report_state_change.o src/libs6f/s6f_user_get_confdirs.o src/libs6f/s6f_user_xdg_subst.o
 else
-libs6f.a.xyzzy:src/libs6f/s6f_confdir_open.lo src/libs6f/s6f_equote.lo src/libs6f/s6f_report_state_change.lo src/libs6f/s6f_user_get_confdirs.lo
+libs6f.a.xyzzy:src/libs6f/s6f_confdir_open.lo src/libs6f/s6f_equote.lo src/libs6f/s6f_report_state_change.lo src/libs6f/s6f_user_get_confdirs.lo src/libs6f/s6f_user_xdg_subst.lo
 endif
 s6: EXTRA_LIBS :=
-s6: src/s6-frontend/s6.o -lskarnet
+s6: src/s6-frontend/s6.o libs6f.a.xyzzy -lskarnet
 s6-frontend: EXTRA_LIBS := ${MAYBEPTHREAD_LIB}
 s6-frontend: src/s6-frontend/s6-frontend.o src/s6-frontend/live.o src/s6-frontend/live_help.o src/s6-frontend/live_install.o src/s6-frontend/live_reload.o src/s6-frontend/live_startstop.o src/s6-frontend/live_status.o src/s6-frontend/live_start_everything.o src/s6-frontend/live_stop_everything.o src/s6-frontend/main_help.o src/s6-frontend/process.o src/s6-frontend/process_help.o src/s6-frontend/process_kill.o src/s6-frontend/process_restart.o src/s6-frontend/process_startstop.o src/s6-frontend/process_status.o src/s6-frontend/repository.o src/s6-frontend/repository_check.o src/s6-frontend/repository_help.o src/s6-frontend/repository_init.o src/s6-frontend/repository_list.o src/s6-frontend/repository_sync.o src/s6-frontend/set.o src/s6-frontend/set_apply.o src/s6-frontend/set_change.o src/s6-frontend/set_check.o src/s6-frontend/set_commit.o src/s6-frontend/set_copy.o src/s6-frontend/set_delete.o src/s6-frontend/set_help.o src/s6-frontend/set_list.o src/s6-frontend/set_status.o src/s6-frontend/system.o src/s6-frontend/system_boot.o src/s6-frontend/system_help.o src/s6-frontend/system_hpr.o src/s6-frontend/version.o src/s6-frontend/version_export.o src/s6-frontend/version_help.o src/s6-frontend/version_show.o libs6f.a.xyzzy ${LIBNSSS} -ls6rc -ls6 -lskarnet
 INTERNAL_LIBS := libs6f.a.xyzzy

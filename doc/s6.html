@@ -129,7 +129,10 @@ The location of the file can be overridden by the admin at install time via the
  <dd> Use the <tt>/etc/s6-user.conf</tt> system <a href="s6.conf.html">configuration file</tt>.
 The location of the file can be overridden by the admin at install time via the
 <tt>--userconffile</tt> configure option, or by the user at run time via the
-<tt>S6_USER_CONF</tt> environment variable. </dd>
+<tt>S6_USER_CONF</tt> environment variable. The
+<a href="s6.conf.html#userservices">XDG variables</a> that this file refers to are
+expanded before it is read; if one of them cannot be resolved, s6 exits 100 and
+says which one. </dd>
 </dl>
 
 

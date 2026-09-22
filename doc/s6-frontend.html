@@ -54,9 +54,11 @@ all the parts of the s6 system. </li>
  <li> <a href="s6.html">s6</a> rewrites itself into
 <code>envfile -I <em>conf</em> -- s6-frontend <em>args...</em></code>
   <ul>
-   <li> If the <tt>--user</tt> flag has been given, some text transformation
-<a href="s6.conf.html#userservices">is first performed on the file</a> to substitute
-the relevant XDG variables. </li>
+   <li> If the <tt>--user</tt> flag has been given, s6 first reads <em>conf</em>
+itself and <a href="s6.conf.html#userservices">expands the XDG variables</a> it
+refers to, then makes the result available to
+<a href="//skarnet.org/software/execline/envfile.html">envfile</a> on its stdin,
+so the command becomes <code>envfile -I -- - s6-frontend <em>args...</em></code>. </li>
   </ul> </li>
  <li> The <a href="//skarnet.org/software/execline/envfile.html">envfile</a> program
 reads and parses <em>conf</em>, and then runs <a href="s6-frontend.html">s6-frontend</a>

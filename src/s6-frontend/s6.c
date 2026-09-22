@@ -1,14 +1,19 @@
 /* ISC license. */
 
 #include <stdlib.h>
+#include <unistd.h>
 
 #include <skalibs/envexec.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
+#include <skalibs/allreadwrite.h>
+#include <skalibs/posixplz.h>
 
 #include <execline/config.h>
 
 #include <s6-frontend/config.h>
+
+#include "s6f.h"
 
 enum golb_e
 {
@@ -37,6 +42,26 @@ static inline enum gola_e gola_pos (gol_arg const *tab, size_t n, enum gola_e i)
 {
   for (enum gola_e j = 0 ; j < n ; j++) if (tab[j].i == i) return j ;
   strerr_dief(101, "can't happen: rgola does not cover all gola_e values") ;
+}
+
+ /* Make s available on stdin, without keeping a child of ours around. */
+
+static void feed_stdin (char const *s, size_t len)
+{
+  int p[2] ;
+  if (pipe(p) == -1) strerr_diefu1sys(111, "pipe") ;
+  switch (doublefork())
+  {
+    case -1 : strerr_diefu1sys(111, "doublefork") ;
+    case 0 :
+      PROG = "s6 (configuration writer)" ;
+      fd_close(p[0]) ;
+      if (allwrite(p[1], s, len) < len) _exit(111) ;
+      fd_close(p[1]) ;
+      _exit(0) ;
+  }
+  fd_close(p[1]) ;
+  if (fd_move(0, p[0]) == -1) strerr_diefu1sys(111, "fd_move") ;
 }
 
 int main (int argc, char const *const *argv)
@@ -86,60 +111,19 @@ int main (int argc, char const *const *argv)
     conf_overrides++ ;
   }
 
-  char const *newargv[(wgolb & GOLB_USER ? 17 : 4) + 1 + conf_overrides + 1 + (wgolb & GOLB_HELP ? 1 : argc) + 1] ;
+  char const *newargv[4 + 1 + conf_overrides + 1 + (wgolb & GOLB_HELP ? 1 : argc) + 1] ;
 
   if (wgolb & GOLB_USER)
   {
-    static char const *const xdgvar[5] =
-    {
-      "XDG_RUNTIME_DIR",
-      "XDG_DATA_HOME",
-      "XDG_CONFIG_HOME",
-      "XDG_STATE_HOME",
-      "XDG_CACHE_HOME",
-    } ;
-    ssize_t xdgpos[5] = { -1, -1, -1, -1, -1 } ;
-    int dosubst = 0 ;
-    int fd ;
-    for (unsigned int i = 0 ; i < 5 ; i++)
-    {
-      char const *x = getenv(xdgvar[i]) ;
-      if (x)
-      {
-        dosubst = 1 ;
-        xdgpos[i] = sa.len ;
-        if (!stralloc_cats(&sa, " s|\\$")
-         || !stralloc_cats(&sa, xdgvar[i])
-         || !stralloc_cats(&sa, "|")
-         || !stralloc_cats(&sa, x)
-         || !stralloc_cats(&sa, "|g;s|\\${")
-         || !stralloc_cats(&sa, xdgvar[i])
-         || !stralloc_cats(&sa, "}|")
-         || !stralloc_cats(&sa, x)
-         || !stralloc_cats(&sa, "|g")
-         || !stralloc_0(&sa))
-          dienomem() ;
-      }
-    }
-    {
-      char const *x = getenv("S6_USER_CONF") ;
-      if (!x) x = S6_FRONTEND_USER_CONF ;
-      fd = open_readb(x) ;
-      if (fd == -1) strerr_diefusys(111, "open ", x, " for reading") ;
-      if (fd_move(0, fd) == -1) strerr_diefusys(111, "fd_move") ;
-    }
-
-    if (dosubst)
-    {
-      newargv[m++] = EXECLINE_BINPREFIX "pipeline" ;
-      newargv[m++] = " sed" ;
-      for (unsigned int i = 0 ; i < 5 ; i++) if (xdgpos[i] >= 0)
-      {
-        newargv[m++] = " -e" ;
-        newargv[m++] = sa.s + xdgpos[i] ;
-      }
-      newargv[m++] = "" ;  /* end of the pipeline block */
-    }
+    stralloc conf = STRALLOC_ZERO ;
+    stralloc subst = STRALLOC_ZERO ;
+    char const *conffile = getenv("S6_USER_CONF") ;
+    if (!conffile) conffile = S6_FRONTEND_USER_CONF ;
+    if (!openslurpclose(&conf, conffile))
+      strerr_diefu2sys(111, "read ", conffile) ;
+    s6f_user_xdg_subst(&subst, conf.s, conf.len, conffile) ;
+    stralloc_free(&conf) ;
+    feed_stdin(subst.s, subst.len) ;
     newargv[m++] = EXECLINE_EXTBINPREFIX "envfile" ;
     newargv[m++] = "-I" ;
     newargv[m++] = "--" ;

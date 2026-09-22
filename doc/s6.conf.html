@@ -121,8 +121,9 @@ may want to set it to an unprivileged user. </dd>
 <p>
   If <a href="s6.html">s6</a> is invoked with the <tt>--user</tt> flag,
 the <tt>/etc/s6-user.conf</tt> file is used instead, with the same
-syntax and the same variables, but additionally, the following
-environment variables, if present, are substituted:
+syntax and the same variables, but additionally, references to the
+following variables, written as <tt>$NAME</tt> or <tt>${NAME}</tt>, are
+expanded before the file is parsed:
 </p>
 
 <ul>
@@ -143,6 +144,46 @@ environment variables, if present, are substituted:
 
 <p>
 and the correct location for the <tt>scandir</tt> will be obtained, for every user.
+Only those five variables are expanded: any other <tt>$NAME</tt> sequence is left
+alone, and a reference to a variable whose name starts with <tt>XDG_</tt> but that
+is not in the list above is an error.
+</p>
+
+<h3 id="userresolution"> How the variables are resolved </h3>
+
+<p>
+ A variable is taken from the environment if, and only if, it holds an absolute
+path; otherwise it is considered unset, as mandated by the XDG Base Directory
+specification. An unset variable is then replaced with its default value,
+which is based on the user's home directory:
+</p>
+
+<dl>
+<dt> <tt>XDG_CONFIG_HOME</tt> </dt><dd> <tt>$HOME/.config</tt> </dd>
+<dt> <tt>XDG_DATA_HOME</tt> </dt><dd> <tt>$HOME/.local/share</tt> </dd>
+<dt> <tt>XDG_STATE_HOME</tt> </dt><dd> <tt>$HOME/.local/state</tt> </dd>
+<dt> <tt>XDG_CACHE_HOME</tt> </dt><dd> <tt>$HOME/.cache</tt> </dd>
+</dl>
+
+<p>
+ The home directory is read from the <tt>HOME</tt> environment variable, and if
+that variable is unset or relative, from the user database entry for the current
+uid.
+</p>
+
+<p>
+ <tt>XDG_RUNTIME_DIR</tt> has no default on purpose: it is provided by the
+session manager, and a guessed value would make the s6 command line address a
+different scandir than the one the user's
+<a href="//skarnet.org/software/s6/s6-svscan.html">s6-svscan</a> is running on.
+</p>
+
+<p>
+ If the configuration file uses a variable that cannot be resolved that way,
+<a href="s6.html">s6</a> exits 100 with a message naming the variable, instead of
+running a command on a path containing an unexpanded reference. A variable that
+the file does not use is never needed: a configuration file that spells out
+absolute paths works with no XDG variable set at all.
 </p>
 
 <h3> Location </h3>

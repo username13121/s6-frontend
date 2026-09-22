@@ -24,6 +24,8 @@ extern void s6f_report_state_change (uint32_t, unsigned char const *, unsigned c
 
 extern void s6f_user_get_confdirs (s6f_confdirs *, stralloc *) ;
 
+extern void s6f_user_xdg_subst (stralloc *, char const *, size_t, char const *) ;
+
 extern size_t s6f_equote_space (char const *const *, unsigned int, char const *) ;
 extern unsigned int s6f_equote (char const **, char const *const *, unsigned int, char const *, char *) ;
 
